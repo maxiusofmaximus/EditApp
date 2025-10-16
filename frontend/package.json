@@ -1,0 +1,95 @@
+{
+  "name": "manga-translator-frontend",
+  "version": "1.0.0",
+  "description": "Frontend para MangaTranslator - Aplicación de traducción automática de manga",
+  "main": "public/electron.js",
+  "homepage": "./",
+  "private": true,
+  "dependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.4.3",
+    "autoprefixer": "^10.4.14",
+    "axios": "^1.4.0",
+    "fabric": "^5.3.0",
+    "lucide-react": "^0.263.1",
+    "postcss": "^8.4.24",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-dropzone": "^14.2.3",
+    "react-scripts": "5.0.1",
+    "react-toastify": "^9.1.3",
+    "tailwindcss": "^3.3.3"
+  },
+  "devDependencies": {
+    "audit-ci": "^6.6.1",
+    "chalk": "^4.1.2",
+    "concurrently": "^8.2.0",
+    "cross-env": "^7.0.3",
+    "electron": "^25.3.1",
+    "electron-builder": "^24.6.3",
+    "rimraf": "^5.0.1",
+    "semver": "^7.5.4",
+    "wait-on": "^7.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron-pack": "npm run build && electron-builder",
+    "preelectron-pack": "npm run build",
+    "security:install": "node ../scripts/secure-install.js install-project",
+    "security:verify": "node ../scripts/verify-dependencies.js",
+    "security:audit": "node ../scripts/security-audit.js .",
+    "security:full": "npm run security:verify && npm run security:audit",
+    "dev:secure": "npm run security:verify && npm start",
+    "build:secure": "npm run security:full && npm run build",
+    "electron:secure": "npm run security:verify && npm run electron-dev",
+    "clean": "rimraf node_modules package-lock.json && npm cache clean --force",
+    "clean:install": "npm run clean && npm run security:install",
+    "postinstall": "node ../scripts/verify-dependencies.js --post-install || echo 'Advertencia: Verificación post-instalación falló'"
+  },
+  "build": {
+    "appId": "com.mangatranslator.app",
+    "productName": "MangaTranslator",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "build/**/*",
+      "public/electron.js",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.graphics-design"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

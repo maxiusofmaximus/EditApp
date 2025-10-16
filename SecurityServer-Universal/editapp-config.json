@@ -1,0 +1,22 @@
+{
+  "app": "EditApp",
+  "version": "1.0.0",
+  "ports": {
+    "frontend": 3000,
+    "backend": 8000,
+    "security": 3001
+  },
+  "security": {
+    "enableRateLimit": true,
+    "enableCORS": true,
+    "enableHelmet": true,
+    "enableFileUploadSecurity": true,
+    "maxFileSize": "10MB",
+    "allowedFileTypes": [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp"
+    ]
+  }
+}
