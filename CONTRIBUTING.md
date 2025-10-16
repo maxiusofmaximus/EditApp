@@ -5,7 +5,7 @@ Thank you for your interest in contributing to EditApp! This document provides g
 ## 🤝 How to Contribute
 
 ### Reporting Issues
-- Use the [GitHub Issues](https://github.com/yourusername/EditApp/issues) page
+- Use the [GitHub Issues](https://github.com/maxiusofmaximus/EditApp/issues) page
 - Search existing issues before creating a new one
 - Provide detailed information including:
   - Steps to reproduce
@@ -14,7 +14,7 @@ Thank you for your interest in contributing to EditApp! This document provides g
   - System information (OS, browser, versions)
 
 ### Suggesting Features
-- Open a [GitHub Discussion](https://github.com/yourusername/EditApp/discussions)
+- Open a [GitHub Discussion](https://github.com/maxiusofmaximus/EditApp/discussions)
 - Describe the feature and its use case
 - Explain how it would benefit users
 - Consider implementation complexity
@@ -30,7 +30,7 @@ Thank you for your interest in contributing to EditApp! This document provides g
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/yourusername/EditApp.git
+   git clone https://github.com/maxiusofmaximus/EditApp.git
    cd EditApp
    ```
 
