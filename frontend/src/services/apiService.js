@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuración base de la API
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // Crear instancia de axios con configuración base
 const apiClient = axios.create({
@@ -51,7 +51,7 @@ export const apiService = {
   // Verificar estado de la API
   async healthCheck() {
     try {
-      const response = await apiClient.get('/health');
+      const response = await axios.get('http://localhost:8000/health');
       return response.data;
     } catch (error) {
       throw new Error('No se puede conectar al servidor');
@@ -61,17 +61,50 @@ export const apiService = {
   // Subir imagen
   async uploadImage(file) {
     try {
+      console.log('🚀 API SERVICE - Iniciando upload de imagen');
+      console.log('📄 API SERVICE - Archivo a subir:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      });
+
+      // ✅ NUEVO: Convertir archivo a base64 ANTES de enviarlo
+       const reader = new FileReader();
+       const base64Promise = new Promise((resolve, reject) => {
+         reader.onload = (e) => {
+           const base64 = e.target.result;
+           console.log('🎯 API SERVICE - Base64 completo ANTES de enviar al backend:');
+           console.log(base64);
+           console.log('📊 API SERVICE - Tamaño del base64 antes de enviar:', base64.length, 'caracteres');
+           resolve(base64);
+         };
+         reader.onerror = reject;
+         reader.readAsDataURL(file);
+       });
+
+      const base64BeforeSend = await base64Promise;
+
       const formData = new FormData();
       formData.append('file', file);
 
+      console.log('📤 API SERVICE - Enviando FormData al backend...');
       const response = await apiClient.post('/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
+      console.log('✅ API SERVICE - Respuesta del backend recibida:', response.data);
+      console.log('📊 API SERVICE - Comparación de tamaños:', {
+        'base64_frontend': base64BeforeSend.length,
+        'base64_backend': response.data.base64_size || 'no reportado',
+        'file_size_backend': response.data.file_size || 'no reportado'
+      });
+
       return response.data;
     } catch (error) {
+      console.error('❌ API SERVICE - Error subiendo imagen:', error);
       throw new Error(`Error subiendo imagen: ${error.message}`);
     }
   },

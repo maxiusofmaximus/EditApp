@@ -27,7 +27,7 @@ const Header = ({
         const scanResult = await SecurityService.scanFile(file);
         
         if (!scanResult.safe) {
-          toast.error(`Archivo no seguro: ${scanResult.issues.join(', ')}`);
+          toast.error(`Archivo no seguro: ${scanResult.reason}`);
           event.target.value = '';
           return;
         }

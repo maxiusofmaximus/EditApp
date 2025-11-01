@@ -139,21 +139,59 @@ async def health_check():
 async def upload_file(file: UploadFile = File(...)):
     """Endpoint para subir archivos con validación de seguridad"""
     
+    print(f"🔄 BACKEND - Recibiendo archivo: {file.filename}")
+    print(f"📊 BACKEND - Tamaño del archivo: {file.size if hasattr(file, 'size') else 'desconocido'} bytes")
+    print(f"📄 BACKEND - Tipo de contenido: {file.content_type}")
+    
     # Validar seguridad del archivo
     is_safe = await validate_file_security(file)
     
     if not is_safe:
+        print("❌ BACKEND - Archivo bloqueado por seguridad")
         raise HTTPException(
             status_code=400,
             detail="Archivo bloqueado por seguridad"
         )
     
+    print("✅ BACKEND - Archivo pasó validación de seguridad")
+    
+    # ✅ NUEVO: Leer contenido del archivo y convertir a base64
+    try:
+        import base64
+        file_content = await file.read()
+        print(f"📊 BACKEND - Contenido leído: {len(file_content)} bytes")
+        
+        # Convertir a base64
+        base64_content = base64.b64encode(file_content).decode('utf-8')
+        print(f"🎯 BACKEND - Base64 completo generado:")
+        print(f"data:image/jpeg;base64,{base64_content}")
+        print(f"📊 BACKEND - Tamaño del base64: {len(base64_content)} caracteres")
+        
+        # Verificar que no esté vacío
+        if len(base64_content) < 1000:
+            print("⚠️ BACKEND - PROBLEMA: Base64 demasiado pequeño, posible corrupción")
+        else:
+            print("✅ BACKEND - Base64 tiene tamaño válido")
+            
+        # Resetear el puntero del archivo para futuro uso
+        await file.seek(0)
+        
+    except Exception as e:
+        print(f"❌ BACKEND - Error procesando archivo: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error procesando archivo: {str(e)}"
+        )
+    
     # Simular procesamiento del archivo
+    print("✅ BACKEND - Procesamiento completado exitosamente")
     return {
         "message": "Archivo subido exitosamente",
         "filename": file.filename,
         "content_type": file.content_type,
-        "security_validated": True
+        "security_validated": True,
+        "base64_size": len(base64_content),
+        "file_size": len(file_content)
     }
 
 @app.get("/api/test-security")

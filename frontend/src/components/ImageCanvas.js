@@ -32,10 +32,16 @@ const ImageCanvas = ({
     const canvas = new fabric.Canvas(canvasRef.current, {
       selection: false,
       preserveObjectStacking: true,
-      renderOnAddRemove: false,
+      renderOnAddRemove: true, // ✅ CAMBIO: Habilitar renderizado automático
       skipTargetFind: false,
-      allowTouchScrolling: true
+      allowTouchScrolling: true,
+      backgroundColor: '#ffffff' // ✅ CAMBIO: Fondo blanco explícito
     });
+
+    // ✅ NUEVO: Optimizar para múltiples operaciones de lectura
+    const canvasElement = canvas.lowerCanvasEl;
+    const ctx = canvasElement.getContext('2d', { willReadFrequently: true });
+    console.log('✅ Canvas configurado con willReadFrequently para optimización');
 
     fabricCanvasRef.current = canvas;
 
@@ -54,16 +60,62 @@ const ImageCanvas = ({
 
   // Cargar imagen
   useEffect(() => {
-    console.log('ImageCanvas useEffect - imageUrl:', imageUrl, 'fabricCanvasRef.current:', fabricCanvasRef.current);
-    if (!imageUrl || !fabricCanvasRef.current) return;
+    console.log('🖼️ ImageCanvas useEffect - imageUrl:', imageUrl, 'fabricCanvasRef.current:', fabricCanvasRef.current);
+    if (!imageUrl || !fabricCanvasRef.current) {
+      console.log('⚠️ Missing requirements - imageUrl:', !!imageUrl, 'fabricCanvasRef.current:', !!fabricCanvasRef.current);
+      return;
+    }
 
-    console.log('Loading image from URL:', imageUrl);
+    console.log('📥 Loading image from URL:', imageUrl);
     fabric.Image.fromURL(imageUrl, (img) => {
-      console.log('Image loaded successfully:', img);
-      const canvas = fabricCanvasRef.current;
+      console.log('✅ Image loaded successfully:', img);
+      console.log('📏 Original image dimensions:', { width: img.width, height: img.height });
+      
+      // ✅ NUEVO: Verificar propiedades de la imagen cargada
+      console.log('🔍 Image properties:', {
+        src: img.getSrc(),
+        width: img.width,
+        height: img.height,
+        scaleX: img.scaleX,
+        scaleY: img.scaleY,
+        opacity: img.opacity,
+        visible: img.visible
+      });
+      
+      // Convertir imagen a base64 para verificación
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Crear una imagen temporal para obtener el base64
+      const tempImg = new Image();
+      tempImg.crossOrigin = 'anonymous';
+      tempImg.onload = () => {
+        ctx.drawImage(tempImg, 0, 0);
+        const base64 = canvas.toDataURL('image/jpeg', 0.8);
+        console.log('🔍 Imagen temporal en base64 completo:');
+        console.log(base64);
+        console.log('📊 Tamaño del base64:', base64.length, 'caracteres');
+      };
+      tempImg.src = imageUrl;
+      
+      // ✅ ARREGLO: Configurar crossOrigin en la imagen de Fabric.js
+      img.crossOrigin = 'anonymous';
+      
+      const fabricCanvas = fabricCanvasRef.current;
       
       // Limpiar canvas
-      canvas.clear();
+      console.log('🧹 Clearing canvas...');
+      fabricCanvas.clear();
+      
+      // ✅ NUEVO: Verificar estado del canvas después de limpiar
+      console.log('🔍 Canvas state after clear:', {
+        objectsCount: fabricCanvas.getObjects().length,
+        backgroundColor: fabricCanvas.backgroundColor,
+        width: fabricCanvas.width,
+        height: fabricCanvas.height
+      });
       
       // Configurar imagen
       img.set({
@@ -72,7 +124,20 @@ const ImageCanvas = ({
         selectable: false,
         evented: false,
         lockMovementX: true,
-        lockMovementY: true
+        lockMovementY: true,
+        crossOrigin: 'anonymous',
+        opacity: 1, // ✅ NUEVO: Opacidad explícita
+        visible: true // ✅ NUEVO: Visibilidad explícita
+      });
+      console.log('⚙️ Image configuration set');
+
+      // ✅ NUEVO: Verificar configuración aplicada
+      console.log('🔍 Image config after set:', {
+        left: img.left,
+        top: img.top,
+        opacity: img.opacity,
+        visible: img.visible,
+        selectable: img.selectable
       });
 
       // Calcular tamaño del canvas basado en la imagen
@@ -81,36 +146,149 @@ const ImageCanvas = ({
       const maxWidth = Math.min(containerWidth * 0.9, 1200); // Máximo 90% del contenedor o 1200px
       const maxHeight = Math.min(containerHeight * 0.9, 800); // Máximo 90% del contenedor o 800px
       
+      console.log('📐 Container dimensions:', { containerWidth, containerHeight });
+      console.log('📏 Max dimensions:', { maxWidth, maxHeight });
+      
       const imageAspectRatio = img.width / img.height;
       const maxAspectRatio = maxWidth / maxHeight;
+      console.log('📊 Aspect ratios - Image:', imageAspectRatio, 'Max:', maxAspectRatio);
       
       let newWidth, newHeight;
       
       if (imageAspectRatio > maxAspectRatio) {
         newWidth = Math.min(maxWidth, img.width);
         newHeight = newWidth / imageAspectRatio;
+        console.log('📏 Image is wider - using max width');
       } else {
         newHeight = Math.min(maxHeight, img.height);
         newWidth = newHeight * imageAspectRatio;
+        console.log('📏 Image is taller - using max height');
       }
+
+      console.log('🎯 Calculated canvas dimensions:', { width: newWidth, height: newHeight });
 
       // Escalar imagen
       const scale = newWidth / img.width;
+      console.log('🔍 Scale factor:', scale);
       img.scale(scale);
+      console.log('✅ Image scaled');
 
       setCanvasSize({ width: newWidth, height: newHeight });
       setImageObject(img);
 
-      canvas.setDimensions({ width: newWidth, height: newHeight });
-      console.log('Adding image to canvas with dimensions:', { width: newWidth, height: newHeight });
-      canvas.add(img);
-      canvas.renderAll();
-      console.log('Canvas rendered with image');
+      fabricCanvas.setDimensions({ width: newWidth, height: newHeight });
+      console.log('✅ Canvas dimensions set');
+      console.log('➕ Adding image to canvas with dimensions:', { width: newWidth, height: newHeight });
+      fabricCanvas.add(img);
+      console.log('✅ Image added to canvas');
+      
+      // ✅ NUEVO: Verificar propiedades de la imagen después de agregarla
+      console.log('🔍 Image properties after adding to canvas:', {
+        left: img.left,
+        top: img.top,
+        width: img.width,
+        height: img.height,
+        scaleX: img.scaleX,
+        scaleY: img.scaleY,
+        opacity: img.opacity,
+        visible: img.visible,
+        angle: img.angle
+      });
+      
+      // ✅ NUEVO: Forzar renderizado múltiple
+      fabricCanvas.renderAll();
+      console.log('🎨 Canvas rendered with image (first render)');
+      
+      // ✅ NUEVO: Método alternativo - dibujar directamente en el canvas
+      setTimeout(() => {
+        console.log('🔧 Intentando método alternativo de renderizado...');
+        
+        // Obtener el contexto del canvas
+        const ctx = fabricCanvas.getContext();
+        
+        // Crear una nueva imagen para dibujar directamente
+        const directImg = new Image();
+        directImg.crossOrigin = 'anonymous';
+        directImg.onload = () => {
+          console.log('🎨 Dibujando imagen directamente en el canvas...');
+          
+          // Limpiar el canvas
+          ctx.clearRect(0, 0, fabricCanvas.width, fabricCanvas.height);
+          
+          // Dibujar la imagen directamente
+          ctx.drawImage(directImg, 0, 0, newWidth, newHeight);
+          
+          console.log('✅ Imagen dibujada directamente');
+          
+          // Verificar que se dibujó
+          const imageData = ctx.getImageData(0, 0, fabricCanvas.width, fabricCanvas.height);
+          const hasPixelData = imageData.data.some(pixel => pixel !== 0);
+          console.log('🔍 Canvas tiene datos después del dibujo directo:', hasPixelData);
+          
+          // Renderizar Fabric.js encima
+          fabricCanvas.renderAll();
+        };
+        directImg.src = imageUrl;
+        
+        // También intentar el renderizado normal
+        fabricCanvas.renderAll();
+        console.log('🎨 Canvas rendered with image (second render)');
+        
+        // ✅ NUEVO: Verificar estado final del canvas
+        const finalObjects = fabricCanvas.getObjects();
+        console.log('🔍 Final canvas state:', {
+          objectsCount: finalObjects.length,
+          canvasWidth: fabricCanvas.width,
+          canvasHeight: fabricCanvas.height,
+          zoom: fabricCanvas.getZoom(),
+          backgroundColor: fabricCanvas.backgroundColor
+        });
+        
+        // ✅ NUEVO: Verificar el elemento DOM del canvas
+        const canvasElement = fabricCanvas.lowerCanvasEl;
+        console.log('🔍 Canvas DOM element:', {
+          width: canvasElement.width,
+          height: canvasElement.height,
+          style: {
+            display: canvasElement.style.display,
+            visibility: canvasElement.style.visibility,
+            opacity: canvasElement.style.opacity,
+            position: canvasElement.style.position
+          }
+        });
+        
+        // ✅ NUEVO: Intentar obtener datos de imagen del canvas
+        try {
+          const imageData = fabricCanvas.getContext().getImageData(0, 0, fabricCanvas.width, fabricCanvas.height);
+          const hasPixelData = imageData.data.some(pixel => pixel !== 0);
+          console.log('🔍 Canvas has pixel data:', hasPixelData);
+          console.log('🔍 ImageData dimensions:', { width: imageData.width, height: imageData.height });
+        } catch (error) {
+          console.error('❌ Error getting image data:', error);
+        }
+      }, 50);
+      
+      // Verificar que la imagen esté realmente en el canvas
+      const objects = fabricCanvas.getObjects();
+      console.log('📋 Objects in canvas:', objects.length);
+      console.log('🖼️ Canvas element visibility:', {
+        display: fabricCanvas.lowerCanvasEl.style.display,
+        visibility: fabricCanvas.lowerCanvasEl.style.visibility,
+        opacity: fabricCanvas.lowerCanvasEl.style.opacity
+      });
+      
+      // Obtener el canvas como base64 final
+      setTimeout(() => {
+        const finalBase64 = fabricCanvas.toDataURL('image/jpeg', 0.8);
+        console.log('🎯 IMAGEN MOSTRADA - Canvas final en base64 completo:');
+        console.log(finalBase64);
+        console.log('📊 Tamaño del canvas final:', finalBase64.length, 'caracteres');
+      }, 100);
 
       // Aplicar zoom
       applyZoom(zoomLevel);
     }, { crossOrigin: 'anonymous' }, (error) => {
-      console.error('Error loading image:', error);
+      console.error('❌ Error loading image:', error);
     });
   }, [imageUrl, zoomLevel]);
 

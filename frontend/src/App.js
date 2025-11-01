@@ -112,7 +112,13 @@ function App() {
 
   // Manejar carga de imagen
   const handleImageLoad = useCallback(async (file) => {
-    console.log('handleImageLoad called with file:', file);
+    console.log('🚀 handleImageLoad called with file:', file);
+    console.log('📄 File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified
+    });
     if (!file) return;
     
     setIsLoading(true);
@@ -121,7 +127,51 @@ function App() {
     try {
       // Crear URL para mostrar la imagen
       const imageUrl = URL.createObjectURL(file);
-      console.log('Created image URL:', imageUrl);
+      console.log('🔗 Created image URL:', imageUrl);
+      
+      // ✅ NUEVO: Convertir imagen a base64 INMEDIATAMENTE después de seleccionarla
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const originalBase64 = e.target.result;
+        console.log('🎯 IMAGEN ORIGINAL - Base64 completo inmediatamente después de seleccionar:');
+        console.log(originalBase64);
+        console.log('📊 Tamaño de la imagen original en base64:', originalBase64.length, 'caracteres');
+        
+        // Verificar que no esté en blanco
+        if (originalBase64.length < 1000) {
+          console.error('⚠️ PROBLEMA: La imagen original es demasiado pequeña, posiblemente corrupta');
+        } else {
+          console.log('✅ La imagen original tiene un tamaño válido');
+        }
+      };
+      reader.readAsDataURL(file);
+      
+      // Verificar que la URL sea válida
+      const testImg = new Image();
+      testImg.onload = () => {
+        console.log('✅ Image URL is valid and loadable');
+        console.log('📏 Image natural dimensions:', {
+          width: testImg.naturalWidth,
+          height: testImg.naturalHeight
+        });
+        
+        // ✅ NUEVO: Convertir la imagen cargada a base64 para comparar
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = testImg.naturalWidth;
+        canvas.height = testImg.naturalHeight;
+        ctx.drawImage(testImg, 0, 0);
+        const loadedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        console.log('🎯 IMAGEN DESPUÉS DE CARGAR - Base64 completo después de cargar en testImg:');
+        console.log(loadedBase64);
+        console.log('📊 Tamaño después de cargar:', loadedBase64.length, 'caracteres');
+      };
+      testImg.onerror = (error) => {
+        console.error('❌ Image URL failed to load:', error);
+      };
+      testImg.src = imageUrl;
+      
+      console.log('📝 Updating state with new image...');
       setCurrentImage(imageUrl);
       setImageFile(file);
       
@@ -130,9 +180,30 @@ function App() {
       setTranslations([]);
       setSelectedBoxIndex(null);
       
+      console.log('✅ State updated successfully');
+      
+      // ✅ NUEVO: Probar upload al backend para rastrear el procesamiento
+      try {
+        console.log('🔄 PRUEBA - Enviando imagen al backend para verificar procesamiento...');
+        const uploadResult = await processImage(file);
+        console.log('✅ PRUEBA - Upload al backend completado:', uploadResult);
+      } catch (uploadError) {
+        console.log('⚠️ PRUEBA - Error en upload al backend (esto es normal si no hay endpoints OCR):', uploadError.message);
+        
+        // Intentar solo el upload básico
+        try {
+          console.log('🔄 PRUEBA - Intentando upload básico...');
+          const { uploadImage } = await import('./services/apiService');
+          const basicUpload = await uploadImage(file);
+          console.log('✅ PRUEBA - Upload básico completado:', basicUpload);
+        } catch (basicError) {
+          console.log('⚠️ PRUEBA - Error en upload básico:', basicError.message);
+        }
+      }
+      
       toast.success('Imagen validada y cargada exitosamente');
     } catch (error) {
-      console.error('Error cargando imagen:', error);
+      console.error('❌ Error cargando imagen:', error);
       toast.error('Error al cargar la imagen');
     } finally {
       setIsLoading(false);
@@ -174,11 +245,15 @@ function App() {
         setIsLoading(true);
         setLoadingMessage('Validando archivo...');
         
-        const isSecure = await SecurityService.scanFile(imageFile);
-        if (isSecure) {
+        // Validar archivo con SecurityService
+        await SecurityService.validateFile(imageFile);
+        
+        // Escanear archivo con el servidor de seguridad
+        const scanResult = await SecurityService.scanFile(imageFile);
+        if (scanResult.safe) {
           await handleImageLoad(imageFile);
         } else {
-          toast.error('El archivo no pasó la validación de seguridad');
+          toast.error(`Archivo no seguro: ${scanResult.reason}`);
         }
       } catch (error) {
         console.error('Error validating dropped file:', error);
